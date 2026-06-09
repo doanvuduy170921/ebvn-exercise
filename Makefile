@@ -3,7 +3,7 @@ run:
 
 
 test:
-	go test ./...
+	go test ./... -coverprofile=coverage.out
 
 test-integration:
 	@echo "==> Running Integration Tests..."

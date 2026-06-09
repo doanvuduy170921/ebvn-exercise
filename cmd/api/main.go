@@ -11,8 +11,8 @@ import (
 // @host localhost:8080
 // @BasePath /
 func main() {
-	cfg := config.LoadConfig()
-	if cfg == nil {
+	cfg, err := config.LoadConfig()
+	if err != nil {
 		panic("config is nil")
 	}
 

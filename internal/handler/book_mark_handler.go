@@ -6,10 +6,12 @@ import (
 	"net/http"
 )
 
+// BookMarkHandler handles HTTP requests related to bookmarks.
 type BookMarkHandler struct {
 	service service.BookMarkService
 }
 
+// NewBookMarkHandler creates a new BookMarkHandler with the given service.
 func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler {
 	return &BookMarkHandler{
 		service: service,
