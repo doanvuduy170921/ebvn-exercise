@@ -1,0 +1,21 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: API document for bookMark API
+  title: bookMark API
+  version: "1.0"
+paths:
+  /health-check:
+    get:
+      description: Get serviceName and instance_id
+      responses:
+        "200":
+          description: Success
+          schema:
+            additionalProperties: true
+            type: object
+      summary: HealthCheck
+      tags:
+      - healthCheck
+swagger: "2.0"
