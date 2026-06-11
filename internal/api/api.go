@@ -3,25 +3,31 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"lesson01-ebvn/pkg/redis"
+
 	"github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	_ "lesson01-ebvn/docs"
 	"lesson01-ebvn/internal/config"
 	"lesson01-ebvn/internal/handler"
+	"lesson01-ebvn/internal/repository"
 	"lesson01-ebvn/internal/service"
 	"net/http"
 )
 
 type engine struct {
-	app *gin.Engine
-	cfg *config.Config
+	app   *gin.Engine
+	cfg   *config.Config
+	redis redis.RedisClient
 }
 
 // NewEngine initializes a new instance of the HTTP server engine.
-func NewEngine(config *config.Config) Engine {
+func NewEngine(config *config.Config, redisClient redis.RedisClient) Engine {
+
 	app := &engine{
-		app: gin.Default(),
-		cfg: config,
+		app:   gin.Default(),
+		cfg:   config,
+		redis: redisClient,
 	}
 	app.initRoutes()
 
@@ -40,8 +46,10 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // InitRoutes wires up clean architecture layers and registers HTTP endpoints.
 func (e *engine) initRoutes() {
-	bookMarkSvc := service.NewBookMarkService(e.cfg)
+	urlRepo := repository.NewUrlRepo(e.redis)
+	bookMarkSvc := service.NewBookMarkService(e.cfg, urlRepo)
 	bookMarkHdl := handler.NewBookMarkHandler(bookMarkSvc)
 	e.app.GET("/health-check", bookMarkHdl.HealthCheck)
+	e.app.POST("/v1/links/shorten", bookMarkHdl.ShortenURL)
 	e.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
