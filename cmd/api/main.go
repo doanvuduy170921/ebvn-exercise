@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"lesson01-ebvn/internal/api"
 	"lesson01-ebvn/internal/config"
+	"lesson01-ebvn/pkg/redis"
 )
 
 // @title bookMark API
@@ -15,11 +17,15 @@ func main() {
 	if err != nil {
 		panic("config is nil")
 	}
+	redisClient, err := redis.NewRedisClient()
+	if err != nil {
+		fmt.Printf(err.Error())
+		panic("redis client is nil")
 
-	engine := api.NewEngine(cfg)
+	}
+	engine := api.NewEngine(cfg, redisClient)
 
 	if err := engine.Start(); err != nil {
 		panic(err)
 	}
-
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"lesson01-ebvn/internal/handler/dto"
 	"lesson01-ebvn/internal/service"
 	"net/http"
 )
@@ -29,5 +30,33 @@ func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) {
 		"message":      "OK",
 		"service_name": serviceName,
 		"instance_id":  instanceId,
+	})
+}
+
+// @Summary ShorttenURL
+// @Description Accepts a long URL and an expiration time, then generates a shortened key.
+// @Tags shortenURL
+// @Success 200 {object} map[string]interface{} "Success"
+// @Router /v1/links/shorten [post]
+func (b *BookMarkHandler) ShortenURL(ctx *gin.Context) {
+	var input dto.ShortenReq
+	if err := ctx.ShouldBind(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+			"code":    http.StatusBadRequest,
+		})
+		return
+	}
+	code, err := b.service.GenerateKey(ctx, input.Url, input.Exp)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+			"code":    http.StatusInternalServerError,
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    code,
+		"message": "Shorten URL generated successfully!",
 	})
 }

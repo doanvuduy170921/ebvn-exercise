@@ -32,6 +32,24 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/links/shorten": {
+            "post": {
+                "description": "Accepts a long URL and an expiration time, then generates a shortened key.",
+                "tags": [
+                    "shortenURL"
+                ],
+                "summary": "ShorttenURL",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     }
 }`
