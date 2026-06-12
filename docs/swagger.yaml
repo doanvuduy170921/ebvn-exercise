@@ -18,4 +18,17 @@ paths:
       summary: HealthCheck
       tags:
       - healthCheck
+  /v1/links/shorten:
+    post:
+      description: Accepts a long URL and an expiration time, then generates a shortened
+        key.
+      responses:
+        "200":
+          description: Success
+          schema:
+            additionalProperties: true
+            type: object
+      summary: ShorttenURL
+      tags:
+      - shortenURL
 swagger: "2.0"

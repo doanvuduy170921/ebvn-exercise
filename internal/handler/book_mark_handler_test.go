@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"strings"
 
 	"lesson01-ebvn/internal/service/mocks"
@@ -84,7 +83,7 @@ func TestBookMarkHandler_ShortenURL(t *testing.T) {
 			},
 			setUpMockService: func(ctx context.Context) *mocks.BookMarkService {
 				serviceMock := mocks.NewBookMarkService(t)
-				serviceMock.On("GenerateKey", mock.Anything, "https://google.com", 604800).
+				serviceMock.On("GenerateKey", ctx, "https://google.com", 604800).
 					Return("abc1234", nil)
 				return serviceMock
 			},
@@ -113,7 +112,7 @@ func TestBookMarkHandler_ShortenURL(t *testing.T) {
 			},
 			setUpMockService: func(ctx context.Context) *mocks.BookMarkService {
 				serviceMock := mocks.NewBookMarkService(t)
-				serviceMock.On("GenerateKey", mock.Anything, "https://google.com", 604800).
+				serviceMock.On("GenerateKey", ctx, "https://google.com", 604800).
 					Return("", errors.New("redis error"))
 				return serviceMock
 			},
@@ -130,11 +129,8 @@ func TestBookMarkHandler_ShortenURL(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(recorder)
 
 			tc.setUpRequest(ctx)
-
 			mockService := tc.setUpMockService(ctx)
-
 			testHandler := NewBookMarkHandler(mockService)
-
 			testHandler.ShortenURL(ctx)
 
 			assert.Equal(t, tc.expectedStatus, recorder.Code)

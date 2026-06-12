@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"lesson01-ebvn/pkg/redis"
+	redis2 "github.com/redis/go-redis/v9"
 
 	"github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -16,18 +16,18 @@ import (
 )
 
 type engine struct {
-	app   *gin.Engine
-	cfg   *config.Config
-	redis redis.RedisClient
+	app *gin.Engine
+	cfg *config.Config
+	re  *redis2.Client
 }
 
 // NewEngine initializes a new instance of the HTTP server engine.
-func NewEngine(config *config.Config, redisClient redis.RedisClient) Engine {
+func NewEngine(config *config.Config, re *redis2.Client) Engine {
 
 	app := &engine{
-		app:   gin.Default(),
-		cfg:   config,
-		redis: redisClient,
+		app: gin.Default(),
+		cfg: config,
+		re:  re,
 	}
 	app.initRoutes()
 
@@ -46,7 +46,7 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // InitRoutes wires up clean architecture layers and registers HTTP endpoints.
 func (e *engine) initRoutes() {
-	urlRepo := repository.NewUrlRepo(e.redis)
+	urlRepo := repository.NewUrlRepo(e.re)
 	bookMarkSvc := service.NewBookMarkService(e.cfg, urlRepo)
 	bookMarkHdl := handler.NewBookMarkHandler(bookMarkSvc)
 	e.app.GET("/health-check", bookMarkHdl.HealthCheck)
