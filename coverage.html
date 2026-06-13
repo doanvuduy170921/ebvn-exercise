@@ -55,19 +55,19 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">lesson01-ebvn/docs/docs.go (100.0%)</option>
+				<option value="file0">lesson01-ebvn/docs/docs.go (50.0%)</option>
 				
-				<option value="file1">lesson01-ebvn/internal/api/api.go (0.0%)</option>
+				<option value="file1">lesson01-ebvn/internal/api/api.go (45.5%)</option>
 				
 				<option value="file2">lesson01-ebvn/internal/config/config.go (0.0%)</option>
 				
 				<option value="file3">lesson01-ebvn/internal/handler/book_mark_handler.go (100.0%)</option>
 				
-				<option value="file4">lesson01-ebvn/internal/repository/url_repo.go (66.7%)</option>
+				<option value="file4">lesson01-ebvn/internal/repository/url_repo.go (33.3%)</option>
 				
 				<option value="file5">lesson01-ebvn/internal/service/book_mark_service.go (88.9%)</option>
 				
-				<option value="file6">lesson01-ebvn/pkg/redis/client.go (45.5%)</option>
+				<option value="file6">lesson01-ebvn/pkg/redis/client.go (31.8%)</option>
 				
 				<option value="file7">lesson01-ebvn/pkg/redis/config.go (80.0%)</option>
 				
@@ -128,9 +128,27 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/v1/links/shorten": {
+            "post": {
+                "description": "Accepts a long URL and an expiration time, then generates a shortened key.",
+                "tags": [
+                    "shortenURL"
+                ],
+                "summary": "ShorttenURL",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     }
-}`
+}</span>`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &amp;swag.Spec{
@@ -156,7 +174,6 @@ func init() <span class="cov8" title="1">{
 import (
         "fmt"
         "github.com/gin-gonic/gin"
-        "lesson01-ebvn/pkg/redis"
 
         "github.com/swaggo/files"
         ginSwagger "github.com/swaggo/gin-swagger"
@@ -165,41 +182,40 @@ import (
         "lesson01-ebvn/internal/handler"
         "lesson01-ebvn/internal/repository"
         "lesson01-ebvn/internal/service"
+        redispkg "lesson01-ebvn/pkg/redis" // ✅ dùng interface của mình
         "net/http"
 )
 
 type engine struct {
-        app   *gin.Engine
-        cfg   *config.Config
-        redis redis.RedisClient
+        app *gin.Engine
+        cfg *config.Config
+        re  redispkg.RedisClient // ✅ interface thay vì *redis2.Client
 }
 
 // NewEngine initializes a new instance of the HTTP server engine.
-func NewEngine(config *config.Config, redisClient redis.RedisClient) Engine <span class="cov0" title="0">{
-
+func NewEngine(config *config.Config, re redispkg.RedisClient) Engine <span class="cov10" title="3">{
         app := &amp;engine{
-                app:   gin.Default(),
-                cfg:   config,
-                redis: redisClient,
+                app: gin.Default(),
+                cfg: config,
+                re:  re,
         }
         app.initRoutes()
-
         return app
 }</span>
 
-// Start begins listening and serving HTTP requests on the configured port.
+/</span>/ Start begins listening and serving HTTP requests on the configured port.
 func (e *engine) Start() error <span class="cov0" title="0">{
         return e.app.Run(fmt.Sprintf(":%s", e.cfg.Port))
 }</span>
 
-// ServeHTTP implements the http.Handler interface.
-func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+/</span>/ ServeHTTP implements the http.Handler interface.
+func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="3">{
         e.app.ServeHTTP(w, r)
 }</span>
 
-// InitRoutes wires up clean architecture layers and registers HTTP endpoints.
-func (e *engine) initRoutes() <span class="cov0" title="0">{
-        urlRepo := repository.NewUrlRepo(e.redis)
+/</span>/ initRoutes wires up clean architecture layers and registers HTTP endpoints.
+func (e *engine) initRoutes() <span class="cov10" title="3">{
+        urlRepo := repository.NewUrlRepo(e.re)
         bookMarkSvc := service.NewBookMarkService(e.cfg, urlRepo)
         bookMarkHdl := handler.NewBookMarkHandler(bookMarkSvc)
         e.app.GET("/health-check", bookMarkHdl.HealthCheck)
@@ -252,7 +268,7 @@ type BookMarkHandler struct {
 }
 
 // NewBookMarkHandler creates a new BookMarkHandler with the given service.
-func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler <span class="cov10" title="4">{
+func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler <span class="cov10" title="7">{
         return &amp;BookMarkHandler{
                 service: service,
         }
@@ -263,7 +279,7 @@ func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler <span 
 // @Tags healthCheck
 // @Success 200 {object} map[string]interface{} "Success"
 // @Router /health-check [get]
-func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) <span class="cov1" title="1">{
+func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) <span class="cov4" title="2">{
         serviceName, instanceId := b.service.GetHealthInfo()
         ctx.JSON(http.StatusOK, gin.H{
                 "message":      "OK",
@@ -273,20 +289,20 @@ func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) <span class="cov1" title
 }</span>
 
 // @Summary ShorttenURL
-// @Description Get....
+// @Description Accepts a long URL and an expiration time, then generates a shortened key.
 // @Tags shortenURL
 // @Success 200 {object} map[string]interface{} "Success"
 // @Router /v1/links/shorten [post]
-func (b *BookMarkHandler) ShortenURL(ctx *gin.Context) <span class="cov8" title="3">{
+func (b *BookMarkHandler) ShortenURL(ctx *gin.Context) <span class="cov8" title="5">{
         var input dto.ShortenReq
-        if err := ctx.ShouldBind(&amp;input); err != nil </span><span class="cov1" title="1">{
+        if err := ctx.ShouldBind(&amp;input); err != nil </span><span class="cov4" title="2">{
                 ctx.JSON(http.StatusBadRequest, gin.H{
                         "message": err.Error(),
                         "code":    http.StatusBadRequest,
                 })
                 return
         }</span>
-        <span class="cov5" title="2">code, err := b.service.GenerateKey(ctx, input.Url, input.Exp)
+        <span class="cov6" title="3">code, err := b.service.GenerateKey(ctx, input.Url, input.Exp)
         if err != nil </span><span class="cov1" title="1">{
                 ctx.JSON(http.StatusInternalServerError, gin.H{
                         "message": err.Error(),
@@ -294,7 +310,7 @@ func (b *BookMarkHandler) ShortenURL(ctx *gin.Context) <span class="cov8" title=
                 })
                 return
         }</span>
-        <span class="cov1" title="1">ctx.JSON(http.StatusOK, gin.H{
+        <span class="cov4" title="2">ctx.JSON(http.StatusOK, gin.H{
                 "code":    code,
                 "message": "Shorten URL generated successfully!",
         })</span>
@@ -305,26 +321,25 @@ func (b *BookMarkHandler) ShortenURL(ctx *gin.Context) <span class="cov8" title=
 
 import (
         "context"
-        redisPkg "lesson01-ebvn/pkg/redis"
+        redispkg "lesson01-ebvn/pkg/redis"
         "time"
 )
 
-// urlRepo implements UrlRepo using Redis as the storage backend.
 type urlRepo struct {
-        r redisPkg.RedisClient
+        r redispkg.RedisClient // ✅ interface
 }
 
 // NewUrlRepo creates a new urlRepo with the given Redis client.
-func NewUrlRepo(rdb redisPkg.RedisClient) UrlRepo <span class="cov10" title="2">{
+func NewUrlRepo(rdb redispkg.RedisClient) UrlRepo <span class="cov10" title="5">{
         return &amp;urlRepo{r: rdb}
 }</span>
 
-// Save stores a key-value pair in Redis with the given expiration time in seconds.
-func (u *urlRepo) Save(ctx context.Context, key, value string, exp int) error <span class="cov10" title="2">{
+</span>// Save stores a key-value pair in Redis with the given expiration time in seconds.
+func (u *urlRepo) Save(ctx context.Context, key, value string, exp int) error <span class="cov7" title="3">{
         return u.r.Set(ctx, key, value, time.Duration(exp)*time.Second)
 }</span>
 
-// Get retrieves the value associated with the given key from Redis.
+</span>// Get retrieves the value associated with the given key from Redis.
 func (u *urlRepo) Get(ctx context.Context, key string) (string, error) <span class="cov0" title="0">{
         return u.r.Get(ctx, key)
 }</span>
@@ -347,7 +362,7 @@ type bookMarkService struct {
 }
 
 // NewBookMarkService creates a new bookMarkService with the given config and repository.
-func NewBookMarkService(cfg *config.Config, repo repository.UrlRepo) BookMarkService <span class="cov10" title="6">{
+func NewBookMarkService(cfg *config.Config, repo repository.UrlRepo) BookMarkService <span class="cov10" title="9">{
         return &amp;bookMarkService{
                 cfg:  cfg,
                 repo: repo,
@@ -356,22 +371,22 @@ func NewBookMarkService(cfg *config.Config, repo repository.UrlRepo) BookMarkSer
 }</span>
 
 // GetHealthInfo returns the service name and instance ID from config.
-func (b *bookMarkService) GetHealthInfo() (string, string) <span class="cov7" title="4">{
+func (b *bookMarkService) GetHealthInfo() (string, string) <span class="cov7" title="5">{
         return b.cfg.ServiceName, b.cfg.InstanceID
 }</span>
 
 // GenerateKey creates a random 7-character short code, saves the code-URL pair to Redis, and returns the code.
-func (b *bookMarkService) GenerateKey(ctx context.Context, url string, exp int) (string, error) <span class="cov4" title="2">{
+func (b *bookMarkService) GenerateKey(ctx context.Context, url string, exp int) (string, error) <span class="cov5" title="3">{
         code, err := utils.GenerateShortCode(7)
         if err != nil </span><span class="cov0" title="0">{
                 return "", fmt.Errorf("generate key code error: %v", err)
         }</span>
 
-        <span class="cov4" title="2">err = b.repo.Save(ctx, code, url, exp)
+        <span class="cov5" title="3">err = b.repo.Save(ctx, code, url, exp)
         if err != nil </span><span class="cov1" title="1">{
                 return "", fmt.Errorf("save bookmark url error: %v", err)
         }</span>
-        <span class="cov1" title="1">return code, nil</span>
+        <span class="cov3" title="2">return code, nil</span>
 
 }
 </pre>
@@ -390,37 +405,33 @@ type redisClient struct {
 }
 
 // NewRedisClient initializes a new Redis client using environment-based configuration.
-// It pings Redis to verify the connection before returning.
 func NewRedisClient() (RedisClient, error) <span class="cov10" title="3">{
         cfg, err := loadConfig("")
-        if err != nil </span><span class="cov0" title="0">{
-                return nil, fmt.Errorf("failed to load config: %w", err)
+        if err != nil </span>{
+                return nil, f</span>mt.Errorf("failed to load config: %w", err)
         }</span>
-        <span class="cov10" title="3">client := redis.NewClient(&amp;redis.Options{
+        c</span>lient := redis.NewClient(&amp;redis.Options{
                 Addr:     cfg.Addr,
                 DB:       cfg.DB,
                 Password: cfg.Password,
         })
-        if err := client.Ping(context.Background()).Err(); err != nil </span><span class="cov10" title="3">{
-                return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+        if err := client.Ping(context.Background()).Err(); err != nil </span>{
+                return nil, fmt.Errorf("failed to connect to Redis: %w", err)</span>
         }</span>
-        <span class="cov0" title="0">fmt.Println("✅ Connected to Redis successfully")
-        return &amp;redisClient{client: client}, nil</span>
+        f</span>mt.Println("✅ Connected to Redis successfully")
+        return &amp;redisClient{client: client}, nil</span> // ✅ trả về wrapper implement interface
 }
-
-// Set wraps redis Set command.
-func (r *redisClient) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error <span class="cov0" title="0">{
+</span>
+func (r *redisClient) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error <span class="cov1" title="1">{
         return r.client.Set(ctx, key, value, expiration).Err()
 }</span>
 
-// Get wraps redis Get command.
-func (r *redisClient) Get(ctx context.Context, key string) (string, error) <span class="cov0" title="0">{
+f</span>unc (r *redisClient) Get(ctx context.Context, key string) (string, error) <span class="cov0" title="0">{
         return r.client.Get(ctx, key).Result()
 }</span>
 
-// Ping wraps redis Ping command.
-func (r *redisClient) Ping(ctx context.Context) error <span class="cov0" title="0">{
-        return r.client.Ping(ctx).Err()
+func (r *redisClient) Ping(ctx context.Context) error {
+        </span>return r.client.Ping(ctx).Err()
 }</span>
 </pre>
 		
@@ -456,16 +467,16 @@ import (
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 // GenerateShortCode generates a cryptographically secure random code of given length.
-func GenerateShortCode(length int) (string, error) <span class="cov5" title="5">{
+func GenerateShortCode(length int) (string, error) <span class="cov5" title="6">{
         result := make([]byte, length)
-        for i := range result </span><span class="cov10" title="31">{
+        for i := range result </span><span class="cov10" title="38">{
                 num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
                 if err != nil </span><span class="cov0" title="0">{
                         return "", err
                 }</span>
-                <span class="cov10" title="31">result[i] = charset[num.Int64()]</span>
+                <span class="cov10" title="38">result[i] = charset[num.Int64()]</span>
         }
-        <span class="cov5" title="5">return string(result), nil</span>
+        <span class="cov5" title="6">return string(result), nil</span>
 }
 </pre>
 		

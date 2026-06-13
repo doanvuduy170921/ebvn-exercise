@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"lesson01-ebvn/internal/api"
 	"lesson01-ebvn/internal/config"
 	"lesson01-ebvn/pkg/redis"
@@ -19,7 +18,6 @@ func main() {
 	}
 	redisClient, err := redis.NewRedisClient()
 	if err != nil {
-		fmt.Printf(err.Error())
 		panic("redis client is nil")
 
 	}

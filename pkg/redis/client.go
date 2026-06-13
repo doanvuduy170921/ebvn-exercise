@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/redis/go-redis/v9"
+	"time"
 )
 
 type redisClient struct {
@@ -11,8 +12,7 @@ type redisClient struct {
 }
 
 // NewRedisClient initializes a new Redis client using environment-based configuration.
-// It pings Redis to verify the connection before returning.
-func NewRedisClient() (*redis.Client, error) {
+func NewRedisClient() (RedisClient, error) {
 	cfg, err := loadConfig("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
@@ -26,5 +26,17 @@ func NewRedisClient() (*redis.Client, error) {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 	fmt.Println("✅ Connected to Redis successfully")
-	return client, nil
+	return &redisClient{client: client}, nil
+}
+
+func (r *redisClient) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
+	return r.client.Set(ctx, key, value, expiration).Err()
+}
+
+func (r *redisClient) Get(ctx context.Context, key string) (string, error) {
+	return r.client.Get(ctx, key).Result()
+}
+
+func (r *redisClient) Ping(ctx context.Context) error {
+	return r.client.Ping(ctx).Err()
 }
