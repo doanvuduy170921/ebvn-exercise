@@ -2,10 +2,16 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"lesson01-ebvn/internal/config"
 	"lesson01-ebvn/internal/repository"
 	"lesson01-ebvn/utils"
+)
+
+var (
+	ErrorNotFound = errors.New("not found")
 )
 
 // bookMarkService implements BookMarkService with config and repository dependencies.
@@ -41,4 +47,14 @@ func (b *bookMarkService) GenerateKey(ctx context.Context, url string, exp int) 
 	}
 	return code, nil
 
+}
+
+func (b *bookMarkService) GetURL(ctx context.Context, code string) (string, error) {
+	url, err := b.repo.Get(ctx, code)
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return "", ErrorNotFound
+		}
+	}
+	return url, nil
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"lesson01-ebvn/internal/config"
@@ -129,6 +130,80 @@ func TestGenerateKey(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, code, 7)
+			}
+		})
+	}
+}
+
+func TestGetURL(t *testing.T) {
+	t.Parallel()
+
+	cfg := &config.Config{
+		ServiceName: "bookmark-service",
+		InstanceID:  "abc-123-xyz",
+		Port:        "8080",
+	}
+
+	testCases := []struct {
+		name        string
+		code        string
+		setupMock   func(ctx context.Context) *mocks.UrlRepo
+		expectedURL string
+		expectError bool
+	}{
+		{
+			name: "success",
+			code: "abc1234",
+			setupMock: func(ctx context.Context) *mocks.UrlRepo {
+				m := mocks.NewUrlRepo(t)
+				m.On("Get", ctx, "abc1234").
+					Return("https://google.com", nil)
+				return m
+			},
+			expectedURL: "https://google.com",
+			expectError: false,
+		},
+		{
+			name: "not found - redis nil",
+			code: "not exist",
+			setupMock: func(ctx context.Context) *mocks.UrlRepo {
+				m := mocks.NewUrlRepo(t)
+				m.On("Get", ctx, "not exist").
+					Return("", goredis.Nil)
+				return m
+			},
+			expectedURL: "",
+			expectError: true,
+		},
+		{
+			name: "redis error",
+			code: "abc1234",
+			setupMock: func(ctx context.Context) *mocks.UrlRepo {
+				m := mocks.NewUrlRepo(t)
+				m.On("Get", ctx, "abc1234").
+					Return("", errors.New("redis error"))
+				return m
+			},
+			expectedURL: "",
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			mockRepo := tc.setupMock(ctx)
+			svc := NewBookMarkService(cfg, mockRepo)
+
+			url, err := svc.GetURL(ctx, tc.code)
+
+			assert.Equal(t, tc.expectedURL, url)
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"lesson01-ebvn/internal/service"
 	"strings"
 
 	"lesson01-ebvn/internal/service/mocks"
@@ -135,6 +136,83 @@ func TestBookMarkHandler_ShortenURL(t *testing.T) {
 
 			assert.Equal(t, tc.expectedStatus, recorder.Code)
 			assert.Equal(t, tc.expectResponse, recorder.Body.String())
+		})
+	}
+}
+
+func TestBookMarkHandler_Redirect(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name             string
+		setUpRequest     func(ctx *gin.Context)
+		setUpMockService func(ctx context.Context) *mocks.BookMarkService
+		expectedStatus   int
+		expectResponse   string
+	}{
+		{
+			name: "success",
+			setUpRequest: func(ctx *gin.Context) {
+				ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/links/redirect/abc1234", nil)
+				ctx.Params = gin.Params{{Key: "code", Value: "abc1234"}}
+			},
+			setUpMockService: func(ctx context.Context) *mocks.BookMarkService {
+				serviceMock := mocks.NewBookMarkService(t)
+				serviceMock.On("GetURL", ctx, "abc1234").
+					Return("https://google.com", nil)
+				return serviceMock
+			},
+			expectedStatus: http.StatusTemporaryRedirect,
+			expectResponse: "",
+		},
+		{
+			name: "not found - code does not exist",
+			setUpRequest: func(ctx *gin.Context) {
+				ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/links/redirect/notexist", nil)
+				ctx.Params = gin.Params{{Key: "code", Value: "not exist"}}
+			},
+			setUpMockService: func(ctx context.Context) *mocks.BookMarkService {
+				serviceMock := mocks.NewBookMarkService(t)
+				serviceMock.On("GetURL", ctx, "not exist").
+					Return("", service.ErrorNotFound)
+				return serviceMock
+			},
+			expectedStatus: http.StatusNotFound,
+			expectResponse: `{"message":"url not found"}`,
+		},
+		{
+			name: "internal server error - service error",
+			setUpRequest: func(ctx *gin.Context) {
+				ctx.Request = httptest.NewRequest(http.MethodGet, "/v1/links/redirect/abc1234", nil)
+				ctx.Params = gin.Params{{Key: "code", Value: "abc1234"}}
+			},
+			setUpMockService: func(ctx context.Context) *mocks.BookMarkService {
+				serviceMock := mocks.NewBookMarkService(t)
+				serviceMock.On("GetURL", ctx, "abc1234").
+					Return("", errors.New("redis error"))
+				return serviceMock
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectResponse: `{"message":"internal server error"}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			recorder := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(recorder)
+
+			tc.setUpRequest(ctx)
+			mockService := tc.setUpMockService(ctx)
+			testHandler := NewBookMarkHandler(mockService)
+			testHandler.Redirect(ctx)
+
+			assert.Equal(t, tc.expectedStatus, recorder.Code)
+			if tc.expectResponse != "" {
+				assert.Equal(t, tc.expectResponse, recorder.Body.String())
+			}
 		})
 	}
 }

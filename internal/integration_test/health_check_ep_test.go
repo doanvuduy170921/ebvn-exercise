@@ -121,3 +121,65 @@ func TestShortenURLEndpoint(t *testing.T) {
 		})
 	}
 }
+
+func TestRedirectEndpoint(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		setUpTestHTTP func(api api.Engine) *httptest.ResponseRecorder
+		expectedCode  int
+		expectedResp  string
+		checkResp     bool
+	}{
+		{
+			name: "success - redirect to original url",
+			setUpTestHTTP: func(a api.Engine) *httptest.ResponseRecorder {
+				body, _ := json.Marshal(map[string]interface{}{
+					"url": "https://google.com",
+					"exp": 604800,
+				})
+				req := httptest.NewRequest(http.MethodPost, "/v1/links/shorten", bytes.NewReader(body))
+				req.Header.Set("Content-Type", "application/json")
+				rec := httptest.NewRecorder()
+				a.ServeHTTP(rec, req)
+
+				var shortenResp map[string]string
+				json.Unmarshal(rec.Body.Bytes(), &shortenResp)
+				code := shortenResp["code"]
+
+				req2 := httptest.NewRequest(http.MethodGet, "/v1/links/redirect/"+code, nil)
+				rec2 := httptest.NewRecorder()
+				a.ServeHTTP(rec2, req2)
+				return rec2
+			},
+			expectedCode: http.StatusTemporaryRedirect,
+			checkResp:    false,
+		},
+		{
+			name: "not found - code does not exist",
+			setUpTestHTTP: func(a api.Engine) *httptest.ResponseRecorder {
+				req := httptest.NewRequest(http.MethodGet, "/v1/links/redirect/notexist999", nil)
+				rec := httptest.NewRecorder()
+				a.ServeHTTP(rec, req)
+				return rec
+			},
+			expectedCode: http.StatusNotFound,
+			expectedResp: `{"message":"url not found"}`,
+			checkResp:    true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			testAPI := setupTestAPI(t)
+			rec := tc.setUpTestHTTP(testAPI)
+			assert.Equal(t, tc.expectedCode, rec.Code)
+			if tc.checkResp {
+				assert.Equal(t, tc.expectedResp, rec.Body.String())
+			}
+		})
+	}
+}

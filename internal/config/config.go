@@ -11,6 +11,7 @@ type Config struct {
 	ServiceName string `envconfig:"SERVICE_NAME" default:"bookmark-service"`
 	InstanceID  string `envconfig:"INSTANCE_ID"`
 	Port        string `envconfig:"PORT" default:"8080"`
+	LogLevel    string `envconfig:"LOG_LEVEL" default:"debug"`
 }
 
 // LoadConfig reads configuration from env. If InstanceID is empty, it auto-generates a unique UUID.

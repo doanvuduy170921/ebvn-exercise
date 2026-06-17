@@ -49,5 +49,6 @@ func (e *engine) initRoutes() {
 	bookMarkHdl := handler.NewBookMarkHandler(bookMarkSvc)
 	e.app.GET("/health-check", bookMarkHdl.HealthCheck)
 	e.app.POST("/v1/links/shorten", bookMarkHdl.ShortenURL)
+	e.app.GET("/v1/links/redirect/:code", bookMarkHdl.Redirect)
 	e.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
