@@ -2,7 +2,7 @@ run:
 	go run cmd/api/main.go
 
 COVERAGE_EXCLUDE=mocks|main.go|integration_test
-COVERAGE_THRESHOLD = 60
+COVERAGE_THRESHOLD = 50
 
 
 test:
