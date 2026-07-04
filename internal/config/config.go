@@ -12,6 +12,7 @@ type Config struct {
 	InstanceID  string `envconfig:"INSTANCE_ID"`
 	Port        string `envconfig:"PORT" default:"8080"`
 	LogLevel    string `envconfig:"LOG_LEVEL" default:"debug"`
+	HostName    string `envconfig:"HOST_NAME" default:"localhost:8080"`
 }
 
 // LoadConfig reads configuration from env. If InstanceID is empty, it auto-generates a unique UUID.

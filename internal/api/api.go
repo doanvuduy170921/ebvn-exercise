@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"lesson01-ebvn/docs"
 
 	"github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -44,6 +45,8 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // initRoutes wires up clean architecture layers and registers HTTP endpoints.
 func (e *engine) initRoutes() {
+	docs.SwaggerInfo.Host = e.cfg.HostName
+
 	urlRepo := repository.NewUrlRepo(e.re)
 	bookMarkSvc := service.NewBookMarkService(e.cfg, urlRepo)
 	bookMarkHdl := handler.NewBookMarkHandler(bookMarkSvc)
