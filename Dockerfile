@@ -1,4 +1,4 @@
-FROM golang:alpine as build
+FROM golang:1.25.9-alpine AS build
 
 RUN mkdir -p /opt/app
 
@@ -8,7 +8,7 @@ COPY . .
 
 RUN go build -o bookmark-management cmd/api/main.go
 
-FROM alpine
+FROM alpine:3.21
 
 WORKDIR /app
 
