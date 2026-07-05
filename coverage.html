@@ -55,23 +55,25 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">lesson01-ebvn/docs/docs.go (50.0%)</option>
+				<option value="file0">lesson01-ebvn/docs/docs.go (100.0%)</option>
 				
-				<option value="file1">lesson01-ebvn/internal/api/api.go (45.5%)</option>
+				<option value="file1">lesson01-ebvn/internal/api/api.go (91.7%)</option>
 				
 				<option value="file2">lesson01-ebvn/internal/config/config.go (0.0%)</option>
 				
-				<option value="file3">lesson01-ebvn/internal/handler/book_mark_handler.go (100.0%)</option>
+				<option value="file3">lesson01-ebvn/internal/handler/book_mark_handler.go (92.3%)</option>
 				
-				<option value="file4">lesson01-ebvn/internal/repository/url_repo.go (33.3%)</option>
+				<option value="file4">lesson01-ebvn/internal/repository/url_repo.go (100.0%)</option>
 				
-				<option value="file5">lesson01-ebvn/internal/service/book_mark_service.go (88.9%)</option>
+				<option value="file5">lesson01-ebvn/internal/service/book_mark_service.go (92.9%)</option>
 				
-				<option value="file6">lesson01-ebvn/pkg/redis/client.go (31.8%)</option>
+				<option value="file6">lesson01-ebvn/pkg/logger/level.go (0.0%)</option>
 				
-				<option value="file7">lesson01-ebvn/pkg/redis/config.go (80.0%)</option>
+				<option value="file7">lesson01-ebvn/pkg/redis/client.go (72.7%)</option>
 				
-				<option value="file8">lesson01-ebvn/utils/keys.go (85.7%)</option>
+				<option value="file8">lesson01-ebvn/pkg/redis/config.go (80.0%)</option>
+				
+				<option value="file9">lesson01-ebvn/utils/keys.go (85.7%)</option>
 				
 				</select>
 			</div>
@@ -129,6 +131,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/links/redirect/{code}": {
+            "get": {
+                "description": "Retrieve the original URL from the short code and redirect the client to it",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Redirect"
+                ],
+                "summary": "Redirect to original URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL Code",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "Redirect to original URL",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "code is required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "url not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/links/shorten": {
             "post": {
                 "description": "Accepts a long URL and an expiration time, then generates a shortened key.",
@@ -136,6 +197,17 @@ const docTemplate = `{
                     "shortenURL"
                 ],
                 "summary": "ShorttenURL",
+                "parameters": [
+                    {
+                        "description": "URL to be shortened and expiration time",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ShortenReq"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Success",
@@ -147,8 +219,24 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "definitions": {
+        "dto.ShortenReq": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "exp": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        }
     }
-}</span>`
+}`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &amp;swag.Spec{
@@ -182,18 +270,18 @@ import (
         "lesson01-ebvn/internal/handler"
         "lesson01-ebvn/internal/repository"
         "lesson01-ebvn/internal/service"
-        redispkg "lesson01-ebvn/pkg/redis" // ✅ dùng interface của mình
+        redispkg "lesson01-ebvn/pkg/redis"
         "net/http"
 )
 
 type engine struct {
         app *gin.Engine
         cfg *config.Config
-        re  redispkg.RedisClient // ✅ interface thay vì *redis2.Client
+        re  redispkg.RedisClient
 }
 
 // NewEngine initializes a new instance of the HTTP server engine.
-func NewEngine(config *config.Config, re redispkg.RedisClient) Engine <span class="cov10" title="3">{
+func NewEngine(config *config.Config, re redispkg.RedisClient) Engine <span class="cov9" title="5">{
         app := &amp;engine{
                 app: gin.Default(),
                 cfg: config,
@@ -203,23 +291,24 @@ func NewEngine(config *config.Config, re redispkg.RedisClient) Engine <span clas
         return app
 }</span>
 
-/</span>/ Start begins listening and serving HTTP requests on the configured port.
+// Start begins listening and serving HTTP requests on the configured port.
 func (e *engine) Start() error <span class="cov0" title="0">{
         return e.app.Run(fmt.Sprintf(":%s", e.cfg.Port))
 }</span>
 
-/</span>/ ServeHTTP implements the http.Handler interface.
-func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="3">{
+// ServeHTTP implements the http.Handler interface.
+func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="6">{
         e.app.ServeHTTP(w, r)
 }</span>
 
-/</span>/ initRoutes wires up clean architecture layers and registers HTTP endpoints.
-func (e *engine) initRoutes() <span class="cov10" title="3">{
+// initRoutes wires up clean architecture layers and registers HTTP endpoints.
+func (e *engine) initRoutes() <span class="cov9" title="5">{
         urlRepo := repository.NewUrlRepo(e.re)
         bookMarkSvc := service.NewBookMarkService(e.cfg, urlRepo)
         bookMarkHdl := handler.NewBookMarkHandler(bookMarkSvc)
         e.app.GET("/health-check", bookMarkHdl.HealthCheck)
         e.app.POST("/v1/links/shorten", bookMarkHdl.ShortenURL)
+        e.app.GET("/v1/links/redirect/:code", bookMarkHdl.Redirect)
         e.app.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }</span>
 </pre>
@@ -237,6 +326,7 @@ type Config struct {
         ServiceName string `envconfig:"SERVICE_NAME" default:"bookmark-service"`
         InstanceID  string `envconfig:"INSTANCE_ID"`
         Port        string `envconfig:"PORT" default:"8080"`
+        LogLevel    string `envconfig:"LOG_LEVEL" default:"debug"`
 }
 
 // LoadConfig reads configuration from env. If InstanceID is empty, it auto-generates a unique UUID.
@@ -256,7 +346,9 @@ func LoadConfig() (*Config, error) <span class="cov0" title="0">{
 		<pre class="file" id="file3" style="display: none">package handler
 
 import (
+        "errors"
         "github.com/gin-gonic/gin"
+        "github.com/rs/zerolog/log"
         "lesson01-ebvn/internal/handler/dto"
         "lesson01-ebvn/internal/service"
         "net/http"
@@ -268,7 +360,7 @@ type BookMarkHandler struct {
 }
 
 // NewBookMarkHandler creates a new BookMarkHandler with the given service.
-func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler <span class="cov10" title="7">{
+func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler <span class="cov10" title="12">{
         return &amp;BookMarkHandler{
                 service: service,
         }
@@ -279,7 +371,7 @@ func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler <span 
 // @Tags healthCheck
 // @Success 200 {object} map[string]interface{} "Success"
 // @Router /health-check [get]
-func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) <span class="cov4" title="2">{
+func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) <span class="cov3" title="2">{
         serviceName, instanceId := b.service.GetHealthInfo()
         ctx.JSON(http.StatusOK, gin.H{
                 "message":      "OK",
@@ -290,30 +382,71 @@ func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) <span class="cov4" title
 
 // @Summary ShorttenURL
 // @Description Accepts a long URL and an expiration time, then generates a shortened key.
+// @Param        request  body      dto.ShortenReq  true  "URL to be shortened and expiration time"
 // @Tags shortenURL
 // @Success 200 {object} map[string]interface{} "Success"
 // @Router /v1/links/shorten [post]
-func (b *BookMarkHandler) ShortenURL(ctx *gin.Context) <span class="cov8" title="5">{
+func (b *BookMarkHandler) ShortenURL(ctx *gin.Context) <span class="cov7" title="6">{
         var input dto.ShortenReq
-        if err := ctx.ShouldBind(&amp;input); err != nil </span><span class="cov4" title="2">{
+        if err := ctx.ShouldBind(&amp;input); err != nil </span><span class="cov3" title="2">{
                 ctx.JSON(http.StatusBadRequest, gin.H{
                         "message": err.Error(),
                         "code":    http.StatusBadRequest,
                 })
                 return
         }</span>
-        <span class="cov6" title="3">code, err := b.service.GenerateKey(ctx, input.Url, input.Exp)
+        <span class="cov6" title="4">code, err := b.service.GenerateKey(ctx, input.Url, input.Exp)
         if err != nil </span><span class="cov1" title="1">{
+                log.Error().Err(err).Msg(err.Error())
                 ctx.JSON(http.StatusInternalServerError, gin.H{
                         "message": err.Error(),
                         "code":    http.StatusInternalServerError,
                 })
                 return
         }</span>
-        <span class="cov4" title="2">ctx.JSON(http.StatusOK, gin.H{
+        <span class="cov4" title="3">ctx.JSON(http.StatusOK, gin.H{
                 "code":    code,
                 "message": "Shorten URL generated successfully!",
         })</span>
+}
+
+// Redirect godoc
+// @Summary      Redirect to original URL
+// @Description  Retrieve the original URL from the short code and redirect the client to it
+// @Tags         Redirect
+// @Accept       json
+// @Produce      json
+// @Param        code  path      string  true  "Short URL Code"
+// @Success      307   {string}  string  "Redirect to original URL"
+// @Failure      400   {object}  map[string]string "code is required"
+// @Failure      404   {object}  map[string]string "url not found"
+// @Failure      500   {object}  map[string]string "internal server error"
+// @Router       /v1/links/redirect/{code} [get]
+func (b *BookMarkHandler) Redirect(ctx *gin.Context) <span class="cov6" title="5">{
+        code := ctx.Param("code")
+        if code == "" </span><span class="cov0" title="0">{
+                ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+                        "message": "Code is required",
+                })
+                return
+        }</span>
+        <span class="cov6" title="5">url, err := b.service.GetURL(ctx, code)
+        if err != nil </span><span class="cov4" title="3">{
+                log.Debug().Msg(err.Error())
+                if errors.Is(err, service.ErrorNotFound) </span><span class="cov3" title="2">{
+                        ctx.JSON(http.StatusNotFound, gin.H{
+                                "message": "url not found",
+                        })
+                        return
+                }</span>
+
+                <span class="cov1" title="1">ctx.JSON(http.StatusInternalServerError, gin.H{
+                        "message": "internal server error",
+                })
+                return</span>
+        }
+        <span class="cov3" title="2">ctx.Redirect(http.StatusTemporaryRedirect, url)</span>
+
 }
 </pre>
 		
@@ -326,21 +459,21 @@ import (
 )
 
 type urlRepo struct {
-        r redispkg.RedisClient // ✅ interface
+        r redispkg.RedisClient
 }
 
 // NewUrlRepo creates a new urlRepo with the given Redis client.
-func NewUrlRepo(rdb redispkg.RedisClient) UrlRepo <span class="cov10" title="5">{
+func NewUrlRepo(rdb redispkg.RedisClient) UrlRepo <span class="cov10" title="7">{
         return &amp;urlRepo{r: rdb}
 }</span>
 
-</span>// Save stores a key-value pair in Redis with the given expiration time in seconds.
-func (u *urlRepo) Save(ctx context.Context, key, value string, exp int) error <span class="cov7" title="3">{
+// Save stores a key-value pair in Redis with the given expiration time in seconds.
+func (u *urlRepo) Save(ctx context.Context, key, value string, exp int) error <span class="cov7" title="4">{
         return u.r.Set(ctx, key, value, time.Duration(exp)*time.Second)
 }</span>
 
-</span>// Get retrieves the value associated with the given key from Redis.
-func (u *urlRepo) Get(ctx context.Context, key string) (string, error) <span class="cov0" title="0">{
+// Get retrieves the value associated with the given key from Redis.
+func (u *urlRepo) Get(ctx context.Context, key string) (string, error) <span class="cov4" title="2">{
         return u.r.Get(ctx, key)
 }</span>
 </pre>
@@ -349,10 +482,16 @@ func (u *urlRepo) Get(ctx context.Context, key string) (string, error) <span cla
 
 import (
         "context"
+        "errors"
         "fmt"
+        "github.com/redis/go-redis/v9"
         "lesson01-ebvn/internal/config"
         "lesson01-ebvn/internal/repository"
         "lesson01-ebvn/utils"
+)
+
+var (
+        ErrorNotFound = errors.New("not found")
 )
 
 // bookMarkService implements BookMarkService with config and repository dependencies.
@@ -362,7 +501,7 @@ type bookMarkService struct {
 }
 
 // NewBookMarkService creates a new bookMarkService with the given config and repository.
-func NewBookMarkService(cfg *config.Config, repo repository.UrlRepo) BookMarkService <span class="cov10" title="9">{
+func NewBookMarkService(cfg *config.Config, repo repository.UrlRepo) BookMarkService <span class="cov10" title="14">{
         return &amp;bookMarkService{
                 cfg:  cfg,
                 repo: repo,
@@ -371,27 +510,62 @@ func NewBookMarkService(cfg *config.Config, repo repository.UrlRepo) BookMarkSer
 }</span>
 
 // GetHealthInfo returns the service name and instance ID from config.
-func (b *bookMarkService) GetHealthInfo() (string, string) <span class="cov7" title="5">{
+func (b *bookMarkService) GetHealthInfo() (string, string) <span class="cov6" title="5">{
         return b.cfg.ServiceName, b.cfg.InstanceID
 }</span>
 
 // GenerateKey creates a random 7-character short code, saves the code-URL pair to Redis, and returns the code.
-func (b *bookMarkService) GenerateKey(ctx context.Context, url string, exp int) (string, error) <span class="cov5" title="3">{
+func (b *bookMarkService) GenerateKey(ctx context.Context, url string, exp int) (string, error) <span class="cov5" title="4">{
         code, err := utils.GenerateShortCode(7)
         if err != nil </span><span class="cov0" title="0">{
                 return "", fmt.Errorf("generate key code error: %v", err)
         }</span>
 
-        <span class="cov5" title="3">err = b.repo.Save(ctx, code, url, exp)
+        <span class="cov5" title="4">err = b.repo.Save(ctx, code, url, exp)
         if err != nil </span><span class="cov1" title="1">{
                 return "", fmt.Errorf("save bookmark url error: %v", err)
         }</span>
-        <span class="cov3" title="2">return code, nil</span>
+        <span class="cov4" title="3">return code, nil</span>
 
+}
+
+func (b *bookMarkService) GetURL(ctx context.Context, code string) (string, error) <span class="cov6" title="5">{
+        url, err := b.repo.Get(ctx, code)
+        if err != nil </span><span class="cov4" title="3">{
+                if errors.Is(err, redis.Nil) </span><span class="cov3" title="2">{
+                        return "", ErrorNotFound
+                }</span>
+        }
+        <span class="cov4" title="3">return url, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package redis
+		<pre class="file" id="file6" style="display: none">package logger
+
+import "github.com/rs/zerolog"
+
+func SetLogLevel(level string) <span class="cov0" title="0">{
+        zerolog.SetGlobalLevel(zerolog.InfoLevel)
+        switch level </span>{
+        case "debug":<span class="cov0" title="0">
+                zerolog.SetGlobalLevel(zerolog.DebugLevel)</span>
+        case "info":<span class="cov0" title="0">
+                zerolog.SetGlobalLevel(zerolog.InfoLevel)</span>
+        case "warn":<span class="cov0" title="0">
+                zerolog.SetGlobalLevel(zerolog.WarnLevel)</span>
+        case "error":<span class="cov0" title="0">
+                zerolog.SetGlobalLevel(zerolog.ErrorLevel)</span>
+        case "panic":<span class="cov0" title="0">
+                zerolog.SetGlobalLevel(zerolog.PanicLevel)</span>
+        case "fatal":<span class="cov0" title="0">
+                zerolog.SetGlobalLevel(zerolog.FatalLevel)</span>
+        default:<span class="cov0" title="0">
+                zerolog.SetGlobalLevel(zerolog.DebugLevel)</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package redis
 
 import (
         "context"
@@ -405,59 +579,59 @@ type redisClient struct {
 }
 
 // NewRedisClient initializes a new Redis client using environment-based configuration.
-func NewRedisClient() (RedisClient, error) <span class="cov10" title="3">{
+func NewRedisClient() (RedisClient, error) <span class="cov10" title="5">{
         cfg, err := loadConfig("")
-        if err != nil </span>{
-                return nil, f</span>mt.Errorf("failed to load config: %w", err)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to load config: %w", err)
         }</span>
-        c</span>lient := redis.NewClient(&amp;redis.Options{
+        <span class="cov10" title="5">client := redis.NewClient(&amp;redis.Options{
                 Addr:     cfg.Addr,
                 DB:       cfg.DB,
                 Password: cfg.Password,
         })
-        if err := client.Ping(context.Background()).Err(); err != nil </span>{
-                return nil, fmt.Errorf("failed to connect to Redis: %w", err)</span>
+        if err := client.Ping(context.Background()).Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to connect to Redis: %w", err)
         }</span>
-        f</span>mt.Println("✅ Connected to Redis successfully")
-        return &amp;redisClient{client: client}, nil</span> // ✅ trả về wrapper implement interface
+        <span class="cov10" title="5">fmt.Println("✅ Connected to Redis successfully")
+        return &amp;redisClient{client: client}, nil</span>
 }
-</span>
-func (r *redisClient) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error <span class="cov1" title="1">{
+
+func (r *redisClient) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error <span class="cov4" title="2">{
         return r.client.Set(ctx, key, value, expiration).Err()
 }</span>
 
-f</span>unc (r *redisClient) Get(ctx context.Context, key string) (string, error) <span class="cov0" title="0">{
+func (r *redisClient) Get(ctx context.Context, key string) (string, error) <span class="cov4" title="2">{
         return r.client.Get(ctx, key).Result()
 }</span>
 
-func (r *redisClient) Ping(ctx context.Context) error {
-        </span>return r.client.Ping(ctx).Err()
+func (r *redisClient) Ping(ctx context.Context) error <span class="cov0" title="0">{
+        return r.client.Ping(ctx).Err()
 }</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package redis
+		<pre class="file" id="file8" style="display: none">package redis
 
 import "github.com/kelseyhightower/envconfig"
 
 // Config holds the configuration for connecting to Redis.
 type Config struct {
         Addr     string `envconfig:"REDIS_ADDR" default:"localhost:6379"`
-        Password string `envconfig:"REDIS_PASSWORD" default:""`
+        Password string `envconfig:"REDIS_PASSWORD" default:"doanvuduy123"`
         DB       int    `envconfig:"REDIS_DB" default:"0"`
 }
 
 // loadConfig loads Redis configuration from environment variables with the given prefix.
-func loadConfig(preFix string) (*Config, error) <span class="cov10" title="3">{
+func loadConfig(preFix string) (*Config, error) <span class="cov10" title="5">{
         var cfg Config
         err := envconfig.Process(preFix, &amp;cfg)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
-        <span class="cov10" title="3">return &amp;cfg, nil</span>
+        <span class="cov10" title="5">return &amp;cfg, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package utils
+		<pre class="file" id="file9" style="display: none">package utils
 
 import (
         "crypto/rand"
@@ -467,16 +641,16 @@ import (
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 // GenerateShortCode generates a cryptographically secure random code of given length.
-func GenerateShortCode(length int) (string, error) <span class="cov5" title="6">{
+func GenerateShortCode(length int) (string, error) <span class="cov5" title="7">{
         result := make([]byte, length)
-        for i := range result </span><span class="cov10" title="38">{
+        for i := range result </span><span class="cov10" title="45">{
                 num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
                 if err != nil </span><span class="cov0" title="0">{
                         return "", err
                 }</span>
-                <span class="cov10" title="38">result[i] = charset[num.Int64()]</span>
+                <span class="cov10" title="45">result[i] = charset[num.Int64()]</span>
         }
-        <span class="cov5" title="6">return string(result), nil</span>
+        <span class="cov5" title="7">return string(result), nil</span>
 }
 </pre>
 		
