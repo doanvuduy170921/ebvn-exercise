@@ -10,6 +10,9 @@ RUN go build -o bookmark-management cmd/api/main.go
 
 FROM alpine:3.21
 
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+
 WORKDIR /app
 
 COPY --from=build /opt/app/bookmark-management /app/bookmark-management
