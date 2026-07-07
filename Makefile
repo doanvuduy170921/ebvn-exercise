@@ -4,6 +4,7 @@ run:
 COVERAGE_EXCLUDE=mocks|main.go|integration_test
 COVERAGE_THRESHOLD = 50
 
+
 test:
 	go test ./... -coverprofile=coverage.tmp -covermode=atomic -coverpkg=./... -p 1
 	grep -vE "$(COVERAGE_EXCLUDE)" coverage.tmp > coverage.out

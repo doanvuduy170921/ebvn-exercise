@@ -1,3 +1,4 @@
+
 # Stage 1: Base - Cài đặt môi trường và dependency
 FROM golang:1.25.9-alpine AS base
 RUN apk add --no-cache git make # Cần cho go mod và chạy lệnh make bên trong
