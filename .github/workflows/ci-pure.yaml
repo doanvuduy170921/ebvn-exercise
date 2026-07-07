@@ -15,15 +15,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run docker test
-        run: make Docker test
+        run: make docker-test
 
       - name: Log in docker hub
         if: ${{ github.event_name != 'pull_request' }}
-        run: make Docker login
+        run: make docker-login
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
         if: ${{ github.event_name != 'pull_request' }}
-        run: make Docker release
+        run: make docker-release
