@@ -38,6 +38,7 @@ docker-test:
 docker-login:
 	@echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
 
+
 docker-build:
 	docker build --target final -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
