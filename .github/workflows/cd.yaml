@@ -17,6 +17,6 @@ jobs:
         working-directory: /root/ebvn-development/
         run: |
           docker rm -f bookmark-service
-          docker compose pull bookmark-service
-          docker compose up -d
+          docker-compose pull bookmark-service
+          docker-compose up -d
           docker system prune -f
