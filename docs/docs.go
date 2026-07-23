@@ -17,17 +17,22 @@ const docTemplate = `{
     "paths": {
         "/health-check": {
             "get": {
-                "description": "Get serviceName and instance_id",
+                "description": "Get network health check for bookmark service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "healthCheck"
                 ],
-                "summary": "HealthCheck",
+                "summary": "Get serviceName and instance_id",
                 "responses": {
                     "200": {
                         "description": "Success",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/internal_handler.HealthCheckResponse"
                         }
                     }
                 }
@@ -106,7 +111,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ShortenReq"
+                            "$ref": "#/definitions/lesson01-ebvn_internal_handler_dto.ShortenReq"
                         }
                     }
                 ],
@@ -123,7 +128,24 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.ShortenReq": {
+        "internal_handler.HealthCheckResponse": {
+            "type": "object",
+            "properties": {
+                "instance_id": {
+                    "type": "string",
+                    "example": "12345678"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "OK"
+                },
+                "service_name": {
+                    "type": "string",
+                    "example": "bookmark"
+                }
+            }
+        },
+        "lesson01-ebvn_internal_handler_dto.ShortenReq": {
             "type": "object",
             "required": [
                 "url"
@@ -143,7 +165,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "bookMark API",

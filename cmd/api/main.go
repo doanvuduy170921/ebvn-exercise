@@ -11,7 +11,6 @@ import (
 // @title bookMark API
 // @version 1.0
 // @description API document for bookMark API
-// @host localhost:8080
 // @BasePath /
 func main() {
 	// load config

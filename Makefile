@@ -22,7 +22,7 @@ test-integration:
 	go test -v ./internal/integration_test/...
 
 swagger:
-	swag init -g cmd/api/main.go
+	swag init -g cmd/api/main.go --parseDependency --parseInternal
 
 dev-run: swagger run
 

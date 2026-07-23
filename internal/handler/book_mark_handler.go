@@ -21,11 +21,21 @@ func NewBookMarkHandler(service service.BookMarkService) *BookMarkHandler {
 	}
 }
 
-// @Summary HealthCheck
-// @Description Get serviceName and instance_id
-// @Tags healthCheck
-// @Success 200 {object} map[string]interface{} "Success"
-// @Router /health-check [get]
+// Định nghĩa struct để Swagger map dữ liệu mẫu
+type HealthCheckResponse struct {
+	InstanceId  string `json:"instance_id" example:"12345678"`
+	Message     string `json:"message" example:"OK"`
+	ServiceName string `json:"service_name" example:"bookmark"`
+}
+
+// HealthCheck godoc
+// @Summary      Get serviceName and instance_id
+// @Description  Get network health check for bookmark service
+// @Tags         healthCheck
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  HealthCheckResponse  "Success"
+// @Router       /health-check [get]
 func (b *BookMarkHandler) HealthCheck(ctx *gin.Context) {
 	serviceName, instanceId := b.service.GetHealthInfo()
 	ctx.JSON(http.StatusOK, gin.H{

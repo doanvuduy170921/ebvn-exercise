@@ -1,6 +1,18 @@
 basePath: /
 definitions:
-  dto.ShortenReq:
+  internal_handler.HealthCheckResponse:
+    properties:
+      instance_id:
+        example: "12345678"
+        type: string
+      message:
+        example: OK
+        type: string
+      service_name:
+        example: bookmark
+        type: string
+    type: object
+  lesson01-ebvn_internal_handler_dto.ShortenReq:
     properties:
       exp:
         type: integer
@@ -9,7 +21,6 @@ definitions:
     required:
     - url
     type: object
-host: localhost:8080
 info:
   contact: {}
   description: API document for bookMark API
@@ -18,14 +29,17 @@ info:
 paths:
   /health-check:
     get:
-      description: Get serviceName and instance_id
+      consumes:
+      - application/json
+      description: Get network health check for bookmark service
+      produces:
+      - application/json
       responses:
         "200":
           description: Success
           schema:
-            additionalProperties: true
-            type: object
-      summary: HealthCheck
+            $ref: '#/definitions/internal_handler.HealthCheckResponse'
+      summary: Get serviceName and instance_id
       tags:
       - healthCheck
   /v1/links/redirect/{code}:
@@ -78,7 +92,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.ShortenReq'
+          $ref: '#/definitions/lesson01-ebvn_internal_handler_dto.ShortenReq'
       responses:
         "200":
           description: Success
