@@ -2,8 +2,10 @@ package api
 
 import (
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"lesson01-ebvn/docs"
+	"time"
 
 	"github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -45,6 +47,16 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // initRoutes wires up clean architecture layers and registers HTTP endpoints.
 func (e *engine) initRoutes() {
+	// config CORS
+	e.app.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:9999", "http://localhost:8080", "*"}, // Mở cho FE port 9999
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	docs.SwaggerInfo.Host = e.cfg.HostName
 
 	urlRepo := repository.NewUrlRepo(e.re)
